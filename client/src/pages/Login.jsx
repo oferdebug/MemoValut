@@ -1,75 +1,77 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import toast from 'react-hot-toast'
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import Spinner from '../components/Spinner';
 
-const Login = () => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const navigate = useNavigate()
+function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/v1/login`,
-        { email, password },
-        { withCredentials: true }
-      )
-      toast.success('Logged in successfully')
-      navigate('/dashboard')
+      await login({ email, password });
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to login')
+      console.error('Login error:', error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div style={{ width: '100%', padding: '2rem' }}>
-      <div style={{ maxWidth: '32rem', margin: '2rem auto', padding: '2rem', border: '1px solid #ddd', borderRadius: '10px', boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)' }}>
-        <h1 style={{ textAlign: 'center', fontSize: '24px', fontWeight: 'bold', marginBottom: '1rem' }}>Sign In</h1>
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Email</label>
-            <input
-              type="email"
-              style={{ width: '100%', padding: '1rem', fontSize: '16px', border: '1px solid #ccc' }}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem' }}>Password</label>
-            <input
-              type="password"
-              style={{ width: '100%', padding: '1rem', fontSize: '16px', border: '1px solid #ccc' }}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            style={{ width: '100%', padding: '1rem', fontSize: '16px', backgroundColor: '#007bff', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+    <div className="form-container">
+      <h1>Welcome Back</h1>
+      <p>Sign in to access your memos</p>
+      
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            className="form-control"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            placeholder="Enter your email"
             disabled={isLoading}
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-        <p style={{ textAlign: 'center', marginTop: '1rem' }}>
-          Don&apos;t have an account?{' '}
-          <Link to="/register" style={{ color: '#007bff', textDecoration: 'underline' }}>
-            Sign Up
-          </Link>
-        </p>
-      </div>
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            className="form-control"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="Enter your password"
+            disabled={isLoading}
+          />
+        </div>
+
+        <button 
+          type="submit" 
+          className={`btn btn-primary w-full ${isLoading ? 'btn-loading' : ''}`}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Signing in...' : 'Sign in'}
+        </button>
+
+        <div className="form-footer">
+          Don't have an account?{' '}
+          <Link to="/register">Register here</Link>
+        </div>
+      </form>
     </div>
-  )
+  );
 }
 
 export default Login;

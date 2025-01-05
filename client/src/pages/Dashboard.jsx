@@ -1,181 +1,153 @@
-/* eslint-disable no-unused-vars */
-import { useState, useEffect } from 'react'
-import axios from 'axios'
-import toast from 'react-hot-toast'
-import { FaEdit, FaTrash } from 'react-icons/fa'
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { DragDropContext, Droppable } from 'react-beautiful-dnd';
+import { FiSearch, FiPlus, FiFolder, FiTag, FiEdit3 } from 'react-icons/fi';
+import Sidebar from '../components/Sidebar';
+import SearchBar from '../components/SearchBar';
+import MemoList from '../components/MemoList';
+import CreateMemoModal from '../components/CreateMemoModal';
 
 const Dashboard = () => {
-  const [memos, setMemos] = useState([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [selectedMemo, setSelectedMemo] = useState(null)
-  const [isOpen, setIsOpen] = useState(false)
-  const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-  })
+  const [searchQuery, setSearchQuery] = useState('');
+  const [memos, setMemos] = useState([]);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [folders, setFolders] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState('default');
 
   useEffect(() => {
-    fetchMemos()
-  }, [])
+    fetchFolders();
+    fetchTags();
+    fetchMemos();
+  }, [selectedFolder, selectedTags, searchQuery]);
+
+  const fetchFolders = async () => {
+    try {
+      const response = await axios.get('/api/v1/memos/folders');
+      setFolders(['default', ...response.data]);
+    } catch (error) {
+      console.error('Error fetching folders:', error);
+    }
+  };
+
+  const fetchTags = async () => {
+    try {
+      const response = await axios.get('/api/v1/memos/tags');
+      setTags(response.data || []);
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    }
+  };
 
   const fetchMemos = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/memos`, {
-        withCredentials: true,
-      })
-      setMemos(response.data)
-     
+      const params = {
+        folder: selectedFolder !== 'default' ? selectedFolder : undefined,
+        tags: selectedTags.length > 0 ? selectedTags.join(',') : undefined,
+        search: searchQuery || undefined,
+      };
+      const response = await axios.get('/api/v1/memos', { params });
+      setMemos(response.data);
     } catch (error) {
-      toast.error('Failed to fetch memos')
+      console.error('Error fetching memos:', error);
     }
-  }
+  };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+    const { source, destination } = result;
+    if (source.index === destination.index) return;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
+    const movedMemo = memos[source.index];
+    const newMemos = [...memos];
+    newMemos.splice(source.index, 1);
+    newMemos.splice(destination.index, 0, movedMemo);
+    setMemos(newMemos);
 
     try {
-      if (selectedMemo) {
-        await axios.put(
-          `${import.meta.env.VITE_API_URL}/api/v1/memos/${selectedMemo._id}`,
-          formData,
-          { withCredentials: true }
-        )
-        toast.success('Memo updated successfully')
-      } else {
-        await axios.post(
-          `${import.meta.env.VITE_API_URL}/api/v1/memos`,
-          formData,
-          { withCredentials: true }
-        )
-        toast.success('Memo created successfully')
-      }
-      fetchMemos()
-      handleClose()
+      await axios.patch(`/api/v1/memos/${movedMemo.id}/reorder`, {
+        newIndex: destination.index,
+      });
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Operation failed')
-    } finally {
-      setIsLoading(false)
+      console.error('Error reordering memo:', error);
+      fetchMemos(); // Refresh the list if reordering fails
     }
-  }
-
-  const handleEdit = (memo) => {
-    setSelectedMemo(memo)
-    setFormData({
-      title: memo.title,
-      content: memo.content,
-    })
-    setIsOpen(true)
-  }
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this memo?')) return
-
-    try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/api/v1/memos/${id}`, {
-        withCredentials: true,
-      })
-      toast.success('Memo deleted successfully')
-      fetchMemos()
-    } catch (error) {
-      toast.error('Failed to delete memo')
-    }
-  }
-
-  const handleClose = () => {
-    setSelectedMemo(null)
-    setFormData({ title: '', content: '' })
-    setIsOpen(false)
-  }
+  };
 
   return (
-    <div className="container">
-      <div className="header">
-        <h1 className="heading">My Memos</h1>
-        <button className="btn btn-primary" onClick={() => setIsOpen(true)}>
-          Create New Memo
-        </button>
-      </div>
-
-      <div className="grid">
-        {memos.map((memo) => (
-          <div key={memo._id} className="card">
-            <div className="memo-header">
-              <h2 className="heading">{memo.title}</h2>
-              <div className="memo-actions">
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => handleEdit(memo)}
-                  aria-label="Edit memo"
-                >
-                  <FaEdit />
-                </button>
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => handleDelete(memo._id)}
-                  aria-label="Delete memo"
-                >
-                  <FaTrash />
-                </button>
-              </div>
-            </div>
-            <p>{memo.content}</p>
-          </div>
-        ))}
-      </div>
-
-      {isOpen && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <button className="modal-close" onClick={handleClose}>
-              ✕
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar
+        folders={folders}
+        tags={tags}
+        selectedFolder={selectedFolder}
+        selectedTags={selectedTags}
+        onFolderSelect={setSelectedFolder}
+        onTagSelect={(tag) => {
+          setSelectedTags((prev) =>
+            prev.includes(tag)
+              ? prev.filter((t) => t !== tag)
+              : [...prev, tag]
+          );
+        }}
+      />
+      
+      <main className="flex-1 overflow-auto pl-[250px]">
+        <nav className="nav">
+          <div className="nav-content">
+            <h1 className="logo">MemoVault</h1>
+            <button
+              className="create-memo-btn"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <FiPlus />
+              New Memo
             </button>
-            <h2 className="heading">
-              {selectedMemo ? 'Edit Memo' : 'Create New Memo'}
-            </h2>
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>Title</label>
-                <input
-                  name="title"
-                  className="form-control"
-                  value={formData.title}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Content</label>
-                <textarea
-                  name="content"
-                  className="form-control"
-                  value={formData.content}
-                  onChange={handleChange}
-                  style={{ height: '150px' }}
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={isLoading}
-              >
-                {selectedMemo ? 'Update' : 'Create'}
-              </button>
-            </form>
           </div>
+        </nav>
+
+        <div className="container">
+          <div className="search-bar">
+            <div className="search-input-container">
+              <FiSearch className="search-icon" />
+              <input
+                type="text"
+                className="search-input"
+                placeholder="Search memos..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="memo-list">
+              {(provided) => (
+                <div
+                  className="memo-list"
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                >
+                  <MemoList memos={memos} />
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         </div>
+      </main>
+
+      {isCreateModalOpen && (
+        <CreateMemoModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onCreateMemo={fetchMemos}
+          folders={folders}
+          tags={tags}
+        />
       )}
     </div>
-  )
-}
+  );
+};
 
 export default Dashboard;

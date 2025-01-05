@@ -1,36 +1,47 @@
+/* eslint-disable no-unused-vars */
 /* eslint-disable react/prop-types */
-import { Navigate } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { useState, useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import axios from '../utils/axios';
+import Spinner from './Spinner';
 
-const PrivateRoute = ({ children }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(null)
+function PrivateRoute({ children }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const location = useLocation();
 
   useEffect(() => {
-    checkLoginStatus()
-  }, [])
+    const checkAuth = async () => {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setIsAuthenticated(false);
+        return;
+      }
 
-  const checkLoginStatus = async () => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/v1/login-status`, {
-        withCredentials: true
-      })
-      setIsLoggedIn(response.data.loggedIn)
-    } catch (error) {
-      console.error('Error checking login status:', error)
-      setIsLoggedIn(false)
-    }
+      try {
+        const response = await axios.get('/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        console.log('Auth check response:', response.data);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Auth check error:', error);
+        setIsAuthenticated(false);
+        localStorage.removeItem('token');
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  if (isAuthenticated === null) {
+    return <Spinner />;
   }
 
-  if (isLoggedIn === null) {
-    return (
-      <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <div className="spinner"></div>
-      </div>
-    )
-  }
-
-  return isLoggedIn ? children : <Navigate to="/login" />
+  return isAuthenticated ? children : <Navigate to="/login" state={{ from: location }} replace />;
 }
 
 export default PrivateRoute;
