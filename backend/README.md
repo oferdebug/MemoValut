@@ -20,7 +20,7 @@ cp .env.example .env
 npm run dev
 ```
 
-## Deployment to Render.com
+## Deployment to Render
 
 1. Create a new account on [Render.com](https://render.com)
 
@@ -30,13 +30,17 @@ npm run dev
    - Select "Node" as the runtime
    - Set the build command: `npm install`
    - Set the start command: `npm start`
+   - Set the Node version to 18 or higher
 
-3. Add Environment Variables:
-   - `PORT`: Will be automatically set by Render
+3. Add Environment Variables in Render Dashboard:
    - `MONGODB_URI`: Your MongoDB connection string
    - `JWT_SECRET`: Your JWT secret key
+   - Note: No need to set PORT as Render will handle this
 
-4. Deploy!
+4. Important Settings:
+   - Root Directory: Leave empty (or set to `/backend` if using monorepo)
+   - Node Environment: `production`
+   - Auto-Deploy: Yes
 
 ## API Endpoints
 
@@ -81,6 +85,28 @@ GET /api/health
 
 ## Environment Variables
 
-- `PORT`: Server port (default: 3000)
 - `MONGODB_URI`: MongoDB connection string
 - `JWT_SECRET`: Secret key for JWT token generation
+
+## Testing the Deployment
+
+After deploying, you can test the API using the health check endpoint:
+```bash
+curl https://your-app-name.onrender.com/api/health
+```
+
+## Troubleshooting
+
+1. If the build fails, check:
+   - Node version in package.json
+   - All dependencies are listed in package.json
+   - Environment variables are set correctly
+
+2. If the app crashes:
+   - Check Render logs
+   - Verify MongoDB connection string
+   - Ensure JWT_SECRET is set
+
+3. For CORS issues:
+   - Verify the frontend URL is correctly set in CORS configuration
+   - Check if the request includes proper headers
