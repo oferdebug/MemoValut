@@ -1,0 +1,19 @@
+{
+  "name": "memovault",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "client",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd client && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd backend && npm start"
+  },
+  "dependencies": {
+    "concurrently": "^8.0.1"
+  }
+}
