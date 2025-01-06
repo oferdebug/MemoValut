@@ -14,7 +14,7 @@ export function useAuth() {
 
   const login = async (credentials) => {
     try {
-      const response = await axios.post('/auth/login', credentials);
+      const response = await axios.post('/api/v1/auth/login', credentials);
       localStorage.setItem('token', response.data.token);
       setIsAuthenticated(true);
       toast.success('Logged in successfully');
@@ -27,7 +27,7 @@ export function useAuth() {
 
   const register = async (userData) => {
     try {
-      const response = await axios.post('/auth/register', userData);
+      const response = await axios.post('/api/v1/auth/register', userData);
       localStorage.setItem('token', response.data.token);
       setIsAuthenticated(true);
       toast.success('Registered successfully');
@@ -40,7 +40,7 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      await axios.post('/auth/logout');
+      await axios.post('/api/v1/auth/logout');
       localStorage.removeItem('token');
       setIsAuthenticated(false);
       toast.success('Logged out successfully');

@@ -1,63 +1,61 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import connect from "./src/db/connect.js";
 import cookieParser from "cookie-parser";
-import fs from "node:fs";
-import errorHandler from "./src/helpers/errorhandler.js";
+import connectDB from "./src/config/db.js";
+import { errorHandler } from "./src/helpers/errorhandler.js";
+import authRoutes from './src/routes/auth/authRoutes.js';
+import userRoutes from './src/routes/user/userRoutes.js';
+import memoRoutes from './src/routes/memo/memoRoutes.js';
 
 dotenv.config();
 
-const port = Number(process.env.PORT) || 8000;
-
 const app = express();
 
-// middleware
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL,
-    credentials: true,
-  })
-);
+// Connect to database
+connectDB();
+
+// CORS configuration
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Credentials'],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// error handler middleware
+// Routes
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/memos', memoRoutes);
+
+// Error handler middleware - should be after routes
 app.use(errorHandler);
 
-//routes
-const routeFiles = fs.readdirSync("./src/routes");
-
-routeFiles.forEach((file) => {
-  // use dynamic import
-  import(`./src/routes/${file}`)
-    .then((route) => {
-      app.use("/api/v1", route.default);
-    })
-    .catch((err) => {
-      console.log("Failed to load route file", err);
-    });
-});
-
-const server = async () => {
+const startServer = async () => {
   try {
-    console.log("Connecting to MongoDB...");
-    await connect();
-    console.log("Connected to MongoDB");
+    const PORT = 5000;
+    const server = app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
 
-    app.get('/', (req, res) => {
-    res.send('Welcome to MemoVault!');
-});
-
-    app.listen(port, () => {
-      console.log(`Server is running on port ${port}`);
+    // Handle server errors
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use`);
+        process.exit(1);
+      } else {
+        console.error('Server error:', error);
+        process.exit(1);
+      }
     });
   } catch (error) {
-    console.log("Failed to start server.....", error.message);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
 
-server();
-
+startServer();

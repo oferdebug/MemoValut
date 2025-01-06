@@ -184,19 +184,26 @@ export const updateUser = asyncHandler(async (req, res) => {
 
 // login status
 export const userLoginStatus = asyncHandler(async (req, res) => {
-  const token = req.cookies.token;
+  // Get token from Authorization header
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
-    // 401 Unauthorized
-    res.status(401).json({ message: "Not authorized, please login!" });
+    return res.status(401).json({ loggedIn: false });
   }
-  // verify the token
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-  if (decoded) {
-    res.status(200).json(true);
-  } else {
-    res.status(401).json(false);
+  try {
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+
+    if (!user) {
+      return res.status(401).json({ loggedIn: false });
+    }
+
+    res.status(200).json({ loggedIn: true, user });
+  } catch (error) {
+    res.status(401).json({ loggedIn: false });
   }
 });
 

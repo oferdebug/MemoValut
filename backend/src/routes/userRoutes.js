@@ -37,7 +37,7 @@ router.delete("/admin/users/:id", protect, adminMiddleware, deleteUser);
 router.get("/admin/users", protect, creatorMiddleware, getAllUsers);
 
 // login status
-router.get("/login-status", userLoginStatus);
+router.get("/login-status", protect, userLoginStatus);
 
 // email verification
 router.post("/verify-email", protect, verifyEmail);

@@ -19,7 +19,7 @@ function PrivateRoute({ children }) {
       }
 
       try {
-        const response = await axios.get('/auth/me', {
+        const response = await axios.get('/api/v1/auth/me', {
           headers: {
             'Authorization': `Bearer ${token}`
           }

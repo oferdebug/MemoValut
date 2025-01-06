@@ -1,24 +1,36 @@
-/* eslint-disable react/prop-types */
+import React from 'react';
+import PropTypes from 'prop-types';
 import { Draggable } from 'react-beautiful-dnd';
-import { FiTrash2, FiEdit2, FiStar } from 'react-icons/fi';
+import { FiStar, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import axios from '../utils/axios';
+import toast from 'react-hot-toast';
 
-function MemoList({ memos, onDelete, onEdit, onPin }) {
+const MemoList = ({ memos, onDelete, onEdit, onPin }) => {
   const handleDelete = async (memoId) => {
     try {
-      await axios.delete(`/memos/${memoId}`);
-      onDelete();
+      await axios.delete(`/api/v1/memos/${memoId}`);
+      toast.success('Memo deleted successfully');
+      onDelete(memoId);
     } catch (error) {
       console.error('Error deleting memo:', error);
+      toast.error('Failed to delete memo');
     }
   };
 
   const handlePin = async (memoId, isPinned) => {
     try {
-      await axios.patch(`/memos/${memoId}`, { isPinned: !isPinned });
-      onPin();
+      const response = await axios.put(`/api/v1/memos/${memoId}`, {
+        isPinned: !isPinned,
+        pinned: !isPinned  // Try both field names
+      });
+      
+      if (response.data) {
+        toast.success(isPinned ? 'Memo unpinned' : 'Memo pinned');
+        onPin();
+      }
     } catch (error) {
       console.error('Error pinning memo:', error);
+      toast.error('Failed to update memo');
     }
   };
 
@@ -32,16 +44,8 @@ function MemoList({ memos, onDelete, onEdit, onPin }) {
     );
   }
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
-
   return (
-    <div className="memo-grid">
+    <div className="memo-list">
       {memos.map((memo, index) => (
         <Draggable key={memo._id} draggableId={memo._id} index={index}>
           {(provided) => (
@@ -51,49 +55,18 @@ function MemoList({ memos, onDelete, onEdit, onPin }) {
               {...provided.dragHandleProps}
               className="memo-card"
             >
-              <div className="memo-card-header">
-                <div className="memo-card-title">
-                  <h3>{memo.title}</h3>
-                  {memo.isPinned && <span className="pinned-badge">Pinned</span>}
-                </div>
-                <div className="memo-card-actions">
-                  <button 
-                    className="action-btn"
-                    onClick={() => handlePin(memo._id, memo.isPinned)}
-                  >
-                    <FiStar className={memo.isPinned ? 'starred' : ''} />
-                  </button>
-                  <button 
-                    className="action-btn"
-                    onClick={() => onEdit(memo)}
-                  >
-                    <FiEdit2 />
-                  </button>
-                  <button 
-                    className="action-btn delete"
-                    onClick={() => handleDelete(memo._id)}
-                  >
-                    <FiTrash2 />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="memo-card-content">
-                <p>{memo.content}</p>
-              </div>
-              
-              {memo.tags && memo.tags.length > 0 && (
-                <div className="memo-card-tags">
-                  {memo.tags.map((tag) => (
-                    <span key={tag} className="tag">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-              
-              <div className="memo-card-footer">
-                <span className="memo-date">{formatDate(memo.createdAt)}</span>
+              <h3>{memo.title}</h3>
+              <p>{memo.content}</p>
+              <div className="memo-card-actions">
+                <button onClick={() => handlePin(memo._id, memo.isPinned)} title={memo.isPinned ? "Unpin" : "Pin"}>
+                  <FiStar className={memo.isPinned ? "starred" : ""} />
+                </button>
+                <button onClick={() => onEdit(memo)} title="Edit">
+                  <FiEdit2 />
+                </button>
+                <button onClick={() => handleDelete(memo._id)} title="Delete">
+                  <FiTrash2 />
+                </button>
               </div>
             </div>
           )}
@@ -101,6 +74,20 @@ function MemoList({ memos, onDelete, onEdit, onPin }) {
       ))}
     </div>
   );
-}
+};
+
+MemoList.propTypes = {
+  memos: PropTypes.arrayOf(
+    PropTypes.shape({
+      _id: PropTypes.string.isRequired,
+      title: PropTypes.string.isRequired,
+      content: PropTypes.string.isRequired,
+      isPinned: PropTypes.bool
+    })
+  ).isRequired,
+  onDelete: PropTypes.func.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onPin: PropTypes.func.isRequired
+};
 
 export default MemoList;

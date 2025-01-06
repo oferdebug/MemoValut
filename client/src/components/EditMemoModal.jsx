@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FiX } from 'react-icons/fi';
+import axios from '../utils/axios';
 import toast from 'react-hot-toast';
 
-const CreateMemoModal = ({ isOpen, onClose, onSubmit }) => {
+const EditMemoModal = ({ isOpen, memo, onClose, onUpdateMemo }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (memo) {
+      setTitle(memo.title);
+      setContent(memo.content);
+    }
+  }, [memo]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,18 +26,22 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit }) => {
 
     setIsSubmitting(true);
     try {
-      await onSubmit({
+      const response = await axios.put(`/api/v1/memos/${memo._id}`, {
         title: title.trim(),
         content: content.trim(),
-        folder: 'default',
-        tags: []
+        folder: memo.folder || 'default',
+        tags: memo.tags || []
       });
-      
-      setTitle('');
-      setContent('');
+
+      console.log('Update memo response:', response.data);
+
+      if (response.data) {
+        toast.success('Memo updated successfully');
+        await onUpdateMemo();
+      }
     } catch (error) {
-      console.error('Error creating memo:', error);
-      toast.error('Failed to create memo');
+      console.error('Error updating memo:', error);
+      toast.error(error.response?.data?.message || 'Failed to update memo');
     } finally {
       setIsSubmitting(false);
     }
@@ -41,7 +53,7 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit }) => {
     <div className="modal-overlay">
       <div className="modal">
         <div className="modal-header">
-          <h2>Create New Memo</h2>
+          <h2>Edit Memo</h2>
           <button onClick={onClose} className="modal-close">
             <FiX />
           </button>
@@ -88,7 +100,7 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit }) => {
               className="btn-primary"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Creating...' : 'Create Memo'}
+              {isSubmitting ? 'Updating...' : 'Update Memo'}
             </button>
           </div>
         </form>
@@ -97,10 +109,17 @@ const CreateMemoModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-CreateMemoModal.propTypes = {
+EditMemoModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
+  memo: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    content: PropTypes.string.isRequired,
+    folder: PropTypes.string,
+    tags: PropTypes.arrayOf(PropTypes.string)
+  }).isRequired,
   onClose: PropTypes.func.isRequired,
-  onSubmit: PropTypes.func.isRequired
+  onUpdateMemo: PropTypes.func.isRequired
 };
 
-export default CreateMemoModal;
+export default EditMemoModal;

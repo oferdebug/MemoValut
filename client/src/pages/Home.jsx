@@ -11,7 +11,7 @@ function Home() {
         <Link to="/register" className="btn btn-primary">
           Get Started
         </Link>
-        <Link to="/login" className="btn btn-ghost">
+        <Link to="/login" className="btn btn-secondary">
           Sign In
         </Link>
       </div>
