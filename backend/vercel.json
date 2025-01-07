@@ -35,7 +35,7 @@
       "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       "headers": {
         "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Origin": "https://backend-iota-sage.vercel.app",
+        "Access-Control-Allow-Origin": "https://client-phi-one-89.vercel.app",
         "Access-Control-Allow-Methods": "GET,OPTIONS,PATCH,DELETE,POST,PUT",
         "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept"
       }
