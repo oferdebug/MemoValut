@@ -8,9 +8,25 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
+// CORS configuration
+const corsOptions = {
+  origin: ["https://client-phi-one-89.vercel.app", "http://localhost:5173"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// Handle OPTIONS requests
+app.options('*', cors(corsOptions));
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI, {
@@ -182,7 +198,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// Start server if not being imported
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
